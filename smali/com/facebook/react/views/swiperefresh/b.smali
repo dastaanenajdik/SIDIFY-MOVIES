@@ -1,0 +1,54 @@
+###### Class com.facebook.react.views.swiperefresh.b (com.facebook.react.views.swiperefresh.b)
+.class public final Lcom/facebook/react/views/swiperefresh/b;
+.super LP1/d;
+.source "SourceFile"
+
+
+# direct methods
+.method public constructor <init>(I)V
+    .registers 3
+
+    const/4 v0, -0x1
+
+    .line 1
+    invoke-direct {p0, v0, p1}, Lcom/facebook/react/views/swiperefresh/b;-><init>(II)V
+
+    return-void
+.end method
+
+.method public constructor <init>(II)V
+    .registers 3
+
+    .line 2
+    invoke-direct {p0, p1, p2}, LP1/d;-><init>(II)V
+
+    return-void
+.end method
+
+
+# virtual methods
+.method protected j()Lcom/facebook/react/bridge/WritableMap;
+    .registers 2
+
+    .line 1
+    invoke-static {}, Lcom/facebook/react/bridge/Arguments;->createMap()Lcom/facebook/react/bridge/WritableMap;
+
+    .line 2
+    .line 3
+    .line 4
+    move-result-object v0
+
+    .line 5
+    return-object v0
+.end method
+
+.method public k()Ljava/lang/String;
+    .registers 2
+
+    .line 1
+    const-string v0, "topRefresh"
+
+    .line 2
+    .line 3
+    return-object v0
+.end method

@@ -1,0 +1,56 @@
+###### Class com.facebook.fbreact.specs.NativeActionSheetManagerSpec (com.facebook.fbreact.specs.NativeActionSheetManagerSpec)
+.class public abstract Lcom/facebook/fbreact/specs/NativeActionSheetManagerSpec;
+.super Lcom/facebook/react/bridge/ReactContextBaseJavaModule;
+.source "SourceFile"
+
+# interfaces
+.implements Lcom/facebook/react/turbomodule/core/interfaces/TurboModule;
+
+
+# static fields
+.field public static final NAME:Ljava/lang/String; = "ActionSheetManager"
+
+
+# direct methods
+.method public constructor <init>(Lcom/facebook/react/bridge/ReactApplicationContext;)V
+    .registers 2
+
+    .line 1
+    invoke-direct {p0, p1}, Lcom/facebook/react/bridge/ReactContextBaseJavaModule;-><init>(Lcom/facebook/react/bridge/ReactApplicationContext;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+
+# virtual methods
+.method public dismissActionSheet()V
+    .registers 1
+    .annotation runtime Lcom/facebook/react/bridge/ReactMethod;
+    .end annotation
+
+    return-void
+.end method
+
+.method public getName()Ljava/lang/String;
+    .registers 2
+
+    .line 1
+    const-string v0, "ActionSheetManager"
+
+    .line 2
+    .line 3
+    return-object v0
+.end method
+
+.method public abstract showActionSheetWithOptions(Lcom/facebook/react/bridge/ReadableMap;Lcom/facebook/react/bridge/Callback;)V
+    .annotation runtime Lcom/facebook/react/bridge/ReactMethod;
+    .end annotation
+.end method
+
+.method public abstract showShareActionSheetWithOptions(Lcom/facebook/react/bridge/ReadableMap;Lcom/facebook/react/bridge/Callback;Lcom/facebook/react/bridge/Callback;)V
+    .annotation runtime Lcom/facebook/react/bridge/ReactMethod;
+    .end annotation
+.end method

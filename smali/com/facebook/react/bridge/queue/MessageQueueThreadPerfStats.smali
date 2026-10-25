@@ -1,0 +1,24 @@
+###### Class com.facebook.react.bridge.queue.MessageQueueThreadPerfStats (com.facebook.react.bridge.queue.MessageQueueThreadPerfStats)
+.class public final Lcom/facebook/react/bridge/queue/MessageQueueThreadPerfStats;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# instance fields
+.field public cpuTime:J
+
+.field public wallTime:J
+
+
+# direct methods
+.method public constructor <init>()V
+    .registers 1
+
+    .line 1
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method

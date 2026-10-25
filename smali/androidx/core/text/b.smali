@@ -1,0 +1,17 @@
+###### Class androidx.core.text.b (androidx.core.text.b)
+.class public abstract synthetic Landroidx/core/text/b;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# direct methods
+.method public static bridge synthetic a(Landroid/text/TextPaint;)Ljava/lang/String;
+    .registers 1
+
+    .line 1
+    invoke-virtual {p0}, Landroid/text/TextPaint;->getFontVariationSettings()Ljava/lang/String;
+
+    move-result-object p0
+
+    return-object p0
+.end method

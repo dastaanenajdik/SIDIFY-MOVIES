@@ -1,0 +1,16 @@
+###### Class app.netmirror.netmirrornew.R is created by jadx
+###### Class app.netmirror.netmirrornew.R.anim is created by jadx
+###### Class app.netmirror.netmirrornew.R.animator is created by jadx
+###### Class app.netmirror.netmirrornew.R.attr is created by jadx
+###### Class app.netmirror.netmirrornew.R.bool is created by jadx
+###### Class app.netmirror.netmirrornew.R.color is created by jadx
+###### Class app.netmirror.netmirrornew.R.dimen is created by jadx
+###### Class app.netmirror.netmirrornew.R.drawable is created by jadx
+###### Class app.netmirror.netmirrornew.R.id is created by jadx
+###### Class app.netmirror.netmirrornew.R.integer is created by jadx
+###### Class app.netmirror.netmirrornew.R.interpolator is created by jadx
+###### Class app.netmirror.netmirrornew.R.layout is created by jadx
+###### Class app.netmirror.netmirrornew.R.mipmap is created by jadx
+###### Class app.netmirror.netmirrornew.R.string is created by jadx
+###### Class app.netmirror.netmirrornew.R.style is created by jadx
+###### Class app.netmirror.netmirrornew.R.xml is created by jadx

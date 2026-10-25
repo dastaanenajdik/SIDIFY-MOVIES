@@ -1,0 +1,21 @@
+###### Class com.facebook.react.bridge.UIManagerListener (com.facebook.react.bridge.UIManagerListener)
+.class public interface abstract Lcom/facebook/react/bridge/UIManagerListener;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# virtual methods
+.method public abstract didDispatchMountItems(Lcom/facebook/react/bridge/UIManager;)V
+.end method
+
+.method public abstract didMountItems(Lcom/facebook/react/bridge/UIManager;)V
+.end method
+
+.method public abstract didScheduleMountItems(Lcom/facebook/react/bridge/UIManager;)V
+.end method
+
+.method public abstract willDispatchViewUpdates(Lcom/facebook/react/bridge/UIManager;)V
+.end method
+
+.method public abstract willMountItems(Lcom/facebook/react/bridge/UIManager;)V
+.end method

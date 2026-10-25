@@ -1,0 +1,17 @@
+###### Class androidx.appcompat.app.n (androidx.appcompat.app.n)
+.class public abstract synthetic Landroidx/appcompat/app/n;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# direct methods
+.method public static bridge synthetic a(Landroid/app/Activity;)Landroid/window/OnBackInvokedDispatcher;
+    .registers 1
+
+    .line 1
+    invoke-virtual {p0}, Landroid/app/Activity;->getOnBackInvokedDispatcher()Landroid/window/OnBackInvokedDispatcher;
+
+    move-result-object p0
+
+    return-object p0
+.end method

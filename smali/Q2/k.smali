@@ -1,0 +1,17 @@
+###### Class q2.k (q2.k)
+.class public abstract synthetic Lq2/k;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# direct methods
+.method public static bridge synthetic a(Landroid/graphics/RenderNode;IIII)Z
+    .registers 5
+
+    .line 1
+    invoke-virtual {p0, p1, p2, p3, p4}, Landroid/graphics/RenderNode;->setPosition(IIII)Z
+
+    move-result p0
+
+    return p0
+.end method
