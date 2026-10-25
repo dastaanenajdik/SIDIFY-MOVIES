@@ -212,7 +212,24 @@ Pipeline steps:
 git tag v3.1.0
 git push origin v3.1.0
 ```
-Bas. 1-2 min me Release me `SidifyMovies-3.1.0.apk` mil jayega.
+Bas. ~40 second me Release me `SidifyMovies-3.1.0.apk` mil jayega.
+
+Tag se version apne aap nikalta hai:
+`v3.1.1` → versionName `3.1.1`, versionCode `30101` (`major*10000 + minor*100 + patch`).
+
+### ✅ Build verified (real run ke results)
+
+| Check | Result |
+|---|---|
+| `apktool b` (2.12.1) | ✅ APK bana |
+| `apksigner sign` + `verify` | ✅ default key se signed (v1+v2+v3) |
+| `aapt dump badging` | ✅ manifest valid, package `app.netmirror.netmirrornew` |
+| Resource ID check | ✅ `string/app_name = 0x7f0d001d`, `mipmap/ic_launcher = 0x7f0c0000`, `drawable/abc_ab_share_pack_mtrl_alpha = 0x7f070002` — **sab public.xml se match** (isliye smali ke hardcoded IDs sahi baithte hain) |
+| APK size | ~51 MB (4 ABI + 19 fonts + bundle) |
+| Release | **[v3.1.1](https://github.com/dastaanenajdik/SIDIFY-MOVIES/releases/tag/v3.1.1)** (aur v3.1.0) |
+
+> Resource IDs match hona sabse important proof hai — agar IDs badal jaate to app
+> kholte hi crash hota. Abhi decompile → rebuild ke baad bhi IDs exactly same hain.
 
 ---
 
