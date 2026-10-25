@@ -19,6 +19,13 @@ const hash = (n) => {
 
 const GENRE_FALLBACK = ['#1b1b22', '#3a3a46'];
 
+/** bundled art (public/art/*.jpg) — poster/backdrop art jab tak koi real image nahi */
+export function artImg(item, cls = 'art-img', alt = '') {
+  if (!item?.art) return '';
+  return `<img class="${cls}" src="/art/${esc(item.art)}.jpg" alt="${esc(alt)}" loading="lazy"
+            decoding="async" style="object-position:${esc(item.artPos || '50% 50%')}" />`;
+}
+
 export function colorsOf(item) {
   const [a, b] = item.colors || GENRE_FALLBACK;
   return `--c1:${a};--c2:${b}`;
@@ -69,11 +76,11 @@ export function card(item, { layout = 'poster', rank = null, taste = [] } = {}) 
     <article class="${cls}" data-type="${item.mediaType}" data-id="${item.id}"
              tabindex="0" role="button" aria-label="${esc(item.title)}">
       ${rank ? `<div class="card__rank" aria-hidden="true">${rank}</div>` : ''}
-      <div class="card__art${item.poster ? '' : ' is-fallback'}"
+      <div class="card__art${item.poster || item.art ? '' : ' is-fallback'}${item.art ? ' has-art' : ''}"
            data-title="${esc((item.title || '').toUpperCase())}"
            style="${colorsOf(item)}">
-        ${poster}
-        ${item.poster ? '' : `<span class="art-mark" aria-hidden="true">${esc((item.title || '?')[0])}</span>`}
+        ${poster}${item.poster ? '' : artImg(item, 'card__art-img')}
+        ${item.poster || item.art ? '' : `<span class="art-mark" aria-hidden="true">${esc((item.title || '?')[0])}</span>`}
         ${badges ? `<div class="card__badges">${badges}</div>` : ''}
         <div class="card__glow">
           <div class="card__title">${esc(item.title)}</div>
@@ -122,9 +129,11 @@ export function hero(item, taste = []) {
     ? `<img src="${esc(item.backdrop)}" alt="" />`
     : '';
 
+  const art = item.backdrop ? '' : artImg(item, 'hero__art');
+
   return `
-    <section class="hero${item.backdrop ? '' : ' hero--gradient'}">
-      <div class="hero__media" style="${colorsOf(item)}">${backdrop}</div>
+    <section class="hero${item.backdrop || item.art ? '' : ' hero--gradient'}${item.art ? ' has-art' : ''}">
+      <div class="hero__media" style="${colorsOf(item)}">${backdrop}${art}</div>
       <div class="hero__content">
         <div class="hero__kicker">${esc(item.reason || 'Featured today')}</div>
         <h1 class="hero__title">${esc(item.title)}</h1>
@@ -173,9 +182,9 @@ export function detail(data, { tab = 'overview', season = 1, seasonData = null, 
   return `
     <button class="detail__close" data-close="modal" aria-label="Close">${icon('close')}</button>
 
-    <div class="detail__hero${data.backdrop ? '' : ' detail__hero--fallback'}"
+    <div class="detail__hero${data.backdrop || data.art ? '' : ' detail__hero--fallback'}${data.art ? ' has-art' : ''}"
          data-title="${esc((data.title || '').toUpperCase())}" style="${colorsOf(data)}">
-      ${heroBg}
+      ${heroBg}${data.backdrop ? '' : artImg(data, 'detail__art')}
       <div class="detail__fade"></div>
       <div class="detail__bottom">
         <h2 class="detail__title">${esc(data.title)}</h2>

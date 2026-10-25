@@ -28,6 +28,7 @@ export const api = {
   config: () => request('/api/config'),
   saveKey: (key) => request('/api/config/key', jsonBody({ key })),
   clearKey: () => request('/api/config/key', { method: 'DELETE' }),
+  recheckLive: () => request('/api/config/live', { method: 'POST' }),
 
   home: () => request('/api/home'),
   search: (q) => request(`/api/search?q=${encodeURIComponent(q)}`),

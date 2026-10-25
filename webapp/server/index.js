@@ -4,7 +4,7 @@
  * Zero-dependency Node server (node:http only) — kuch install karne ki zaroorat nahi.
  *   • Static frontend  : /public
  *   • JSON API         : /api/*
- *   • Provider layer   : demo (local catalog)  ya  tmdb (real metadata)
+ *   • Provider layer   : catalog (104 bundled titles) | open (keyless live) | tmdb (optional)
  *
  * Usage:
  *   node server/index.js                 # http://localhost:3000
@@ -17,7 +17,8 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { provider as demoProvider } from './providers/demo.js';
+import { provider as catalogProvider } from './providers/local.js';
+import * as open from './providers/open.js';
 import { TmdbProvider } from './providers/tmdb.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,11 +49,29 @@ async function saveConfig() {
   }
 }
 
+/* live = keyless public sources (iTunes + TVmaze) reachable hain ya nahi */
+const live = { ok: false, checkedAt: 0, note: 'not checked yet' };
+
+async function checkLive() {
+  const ok = await open.probe();
+  live.ok = ok;
+  live.checkedAt = Date.now();
+  live.note = ok ? 'iTunes + TVmaze reachable' : 'internet nahi mila — bundled catalog';
+  return ok;
+}
+
 function activeProvider() {
   if (config.tmdbKey) {
     return { id: 'tmdb', client: new TmdbProvider(config.tmdbKey) };
   }
-  return { id: 'demo', client: demoProvider };
+  return { id: live.ok ? 'live' : 'catalog', client: catalogProvider };
+}
+
+/** live ids: `im-<trackId>` (iTunes film) ya `tv-<showId>` (TVmaze series) */
+const isLiveId = (id) => typeof id === 'string' && /^(im|tv)-/.test(id);
+
+function providerFor(id) {
+  return isLiveId(id) ? open : activeProvider().client;
 }
 
 /* ------------------------------------------------------------------- utils */
@@ -137,7 +156,11 @@ async function handleApi(req, res, url) {
     if (req.method === 'GET') {
       return json(res, 200, {
         mode,
+        live: live.ok,
+        liveNote: live.note,
+        liveCheckedAt: live.checkedAt,
         hasKey: Boolean(config.tmdbKey),
+        titles: 104,
         keyHint: config.tmdbKey
           ? `${config.tmdbKey.slice(0, 4)}…${config.tmdbKey.slice(-4)}`
           : null,
@@ -174,14 +197,18 @@ async function handleApi(req, res, url) {
     if (seg[1] === 'key' && req.method === 'DELETE') {
       config.tmdbKey = '';
       await saveConfig();
-      return json(res, 200, { ok: true, mode: 'demo' });
+      return json(res, 200, { ok: true, mode: 'catalog' });
+    }
+    if (seg[1] === 'live' && req.method === 'POST') {
+      const ok = await checkLive();
+      return json(res, 200, { ok, live: ok, note: live.note, mode: activeProvider().id });
     }
     return json(res, 405, { error: 'method not allowed' });
   }
 
   // ---- health
   if (seg[0] === 'health') {
-    return json(res, 200, { ok: true, mode, provider: id(mode) });
+    return json(res, 200, { ok: true, mode, live: live.ok, titles: 104 });
   }
 
   try {
@@ -194,23 +221,37 @@ async function handleApi(req, res, url) {
       }
       case 'search': {
         const q = url.searchParams.get('q') || '';
-        return json(res, 200, { ...(await client.search(q)), mode });
+        const local = await client.search(q);
+        let extra = [];
+        if (live.ok && q.trim()) {
+          try {
+            extra = await open.search(q);
+          } catch (err) {
+            console.warn('[live search]', err.message);
+          }
+        }
+        const seen = new Set(local.items.map((x) => `${x.title.toLowerCase()}|${x.year || ''}`));
+        const fresh = extra.filter(
+          (x) => !seen.has(`${String(x.title || '').toLowerCase()}|${x.year || ''}`)
+        );
+        const items = [...local.items, ...fresh];
+        return json(res, 200, { items, total: items.length, query: local.query, live: extra.length, mode });
       }
       case 'title': {
         const [, type, tid] = seg;
-        const data = await client.title(type, Number(tid));
+        const data = await (isLiveId(tid) ? open : client).title(type, tid);
         if (!data) return json(res, 404, { error: 'title not found' });
         return json(res, 200, { ...data, mode });
       }
       case 'season': {
         const [, type, tid, n] = seg;
-        const data = await client.season(type, Number(tid), Number(n));
+        const data = await (isLiveId(tid) ? open : client).season(type, tid, Number(n));
         if (!data) return json(res, 404, { error: 'season not found' });
         return json(res, 200, { ...data, mode });
       }
       case 'play': {
         const [, type, tid] = seg;
-        const data = await client.play(type, Number(tid));
+        const data = await (isLiveId(tid) ? open : client).play(type, tid);
         if (!data) return json(res, 404, { error: 'title not found' });
         return json(res, 200, { ...data, mode });
       }
@@ -244,7 +285,7 @@ async function handleApi(req, res, url) {
   }
 }
 
-const id = (mode) => (mode === 'tmdb' ? 'tmdb' : 'demo');
+const id = (mode) => (mode === 'tmdb' ? 'tmdb' : mode === 'live' ? 'live' : 'catalog');
 
 function safeJson(str, fallback) {
   if (!str) return fallback;
@@ -282,10 +323,15 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  const { id: mode } = activeProvider();
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n  SIDIFY webapp`);
   console.log(`  -> http://localhost:${PORT}`);
-  console.log(`  -> mode: ${mode}${mode === 'demo' ? ' (TMDB key add karo: settings gear)' : ''}`);
+  await checkLive();
+  const { id: mode } = activeProvider();
+  console.log(`  -> mode: ${mode} — ${live.note}`);
+  if (!live.ok) {
+    console.log('  -> live search (iTunes + TVmaze) abhi off; bundled 104-title catalog chal raha hai');
+  }
+  setInterval(checkLive, 10 * 60 * 1000).unref?.();
   console.log(`  -> static: ${PUBLIC_DIR}\n`);
 });

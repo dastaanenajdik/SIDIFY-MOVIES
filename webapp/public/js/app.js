@@ -460,18 +460,32 @@ function renderPlayer(play, item) {
     return;
   }
 
-  if (play.kind === 'demo') {
+  if (play.kind === 'file' && play.url) {
     el.player.innerHTML = `
       <div class="player__top">
         <button class="icon-btn" data-act="close-player" aria-label="Close">${ui.icon('back')}</button>
-        <span class="player__title">${ui.esc(title)} · demo preview</span>
+        <span class="player__title">${ui.esc(title)}${play.label ? ` — ${ui.esc(play.label)}` : ''}</span>
+      </div>
+      <div class="player__stage">
+        <video class="player__video" src="${ui.esc(play.url)}" controls autoplay playsinline
+               poster="${ui.esc(item?.backdrop || item?.poster || '')}"></video>
+        ${play.note ? `<div class="player__note">${ui.esc(play.note)}</div>` : ''}
+      </div>`;
+    return;
+  }
+
+  if (play.kind === 'preview') {
+    el.player.innerHTML = `
+      <div class="player__top">
+        <button class="icon-btn" data-act="close-player" aria-label="Close">${ui.icon('back')}</button>
+        <span class="player__title">${ui.esc(title)} · cinematic preview</span>
       </div>
       <div class="player__stage">
         <canvas class="player__canvas"></canvas>
-        <div class="player__note">${ui.esc(play.message || 'Demo preview')}</div>
+        <div class="player__note">${ui.esc(play.message || 'Preview')}</div>
       </div>`;
     const canvas = $('canvas', el.player);
-    state.playerStop = startDemoCanvas(canvas, {
+    state.playerStop = startPreviewCanvas(canvas, {
       title,
       colors: play.colors || item?.colors || ['#111', '#333'],
     });
@@ -506,8 +520,8 @@ function hidePlayer({ silent = false } = {}) {
   }
 }
 
-/** Demo mode ka "player": cinematic canvas + timeline (koi content nahi). */
-function startDemoCanvas(canvas, { title, colors }) {
+/** Bundled catalog ka "player": cinematic canvas + timeline (koi content nahi). */
+function startPreviewCanvas(canvas, { title, colors }) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return () => {}; // canvas support nahi (ya headless test)
   let raf = 0;
@@ -646,19 +660,30 @@ async function openSettings({ fromRoute = false } = {}) {
     /* ignore */
   }
 
-  const live = cfg?.mode === 'tmdb';
+  const tmdb = cfg?.mode === 'tmdb';
+  const liveOn = Boolean(cfg?.live);
   el.modalPanel.innerHTML = `
     <button class="detail__close" data-close="modal" aria-label="Close">${ui.icon('close')}</button>
     <div class="sheet">
       <h3>Settings</h3>
       <div class="status-line">
-        <span class="status-dot ${live ? '' : 'status-dot--demo'}"></span>
-        ${live ? `TMDB connected <span style="color:#6c6c78">(${ui.esc(cfg.keyHint || '')})</span>` : 'Demo mode — local catalog'}
+        <span class="status-dot ${liveOn || tmdb ? '' : 'status-dot--off'}"></span>
+        ${
+          tmdb
+            ? `TMDB connected <span style="color:#6c6c78">(${ui.esc(cfg.keyHint || '')})</span>`
+            : liveOn
+            ? 'Live — bundled catalog + online search (iTunes / TVmaze)'
+            : 'Offline — bundled 104-title catalog'
+        }
       </div>
       <p>
-        Real posters, backdrops, cast, episodes aur official trailers ke liye
-        <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">TMDB API key</a>
-        daalein. Key sirf server par rehti hai, browser tak nahi jaati.
+        <b>Koi key zaroori nahi hai.</b> Site 104 real titles ke bundled catalog par chalti hai,
+        aur internet mile to search me iTunes (films) + TVmaze (series) ke live results bhi
+        jud jaate hain — dono public aur keyless hain.
+      </p>
+      <p style="font-size:12.5px;color:#6c6c78">
+        Optional: TMDB key daalne par real posters, backdrops, cast aur episodes aayenge.
+        Key sirf server par rehti hai, browser tak nahi jaati.
       </p>
       <div class="field">
         <input id="tmdb-key" type="password" placeholder="TMDB API key (v3) ya Read Access Token (v4)"
@@ -666,15 +691,16 @@ async function openSettings({ fromRoute = false } = {}) {
         <button class="btn btn--light btn--sm" data-act="save-key">Save</button>
       </div>
       ${
-        live
+        tmdb
           ? `<button class="btn btn--ghost btn--sm" data-act="clear-key" style="justify-self:start">Disconnect TMDB</button>`
           : ''
       }
+      <button class="btn btn--ghost btn--sm" data-act="recheck-live" style="justify-self:start">
+        ${liveOn ? 'Live status dobara check karo' : 'Internet check karo'}
+      </button>
       <p style="font-size:12.5px;color:#6c6c78">
-        Note: yeh project metadata (TMDB) aur official trailers use karta hai. Koi
-        copyrighted stream host ya proxy nahi hota.<br />
-        Agar hosted preview me TMDB reachable na ho, to project apne computer par
-        chalayein (<code>node server/index.js</code>) — wahan live mode kaam karega.
+        Note: sirf metadata + official promotional trailers use hote hain. Koi
+        copyrighted stream host, CDN scrape ya proxy nahi.
       </p>
     </div>`;
 
@@ -777,7 +803,7 @@ async function handleAction(node) {
       toast('Taste update ho gayi — recommendations behtar honge');
       return;
     case 'mute':
-      toast('Audio toggle demo me available nahi');
+      toast('Is player me audio track nahi hai');
       return;
     case 'play-episode': {
       const d = state.detail;
@@ -796,6 +822,22 @@ async function handleAction(node) {
     case 'settings':
       openSettings();
       return;
+    case 'recheck-live': {
+      node.disabled = true;
+      node.textContent = 'Checking…';
+      try {
+        const r = await api.recheckLive();
+        state.config = await api.config();
+        updateModePill();
+        toast(r.live ? 'Live search on — iTunes + TVmaze reachable' : 'Internet nahi mila — bundled catalog chalega');
+        openSettings();
+      } catch {
+        toast('Check fail hua');
+        node.disabled = false;
+        node.textContent = 'Dobara check karo';
+      }
+      return;
+    }
     case 'save-key': {
       const input = $('#tmdb-key');
       const key = input?.value?.trim();
@@ -830,7 +872,7 @@ async function handleAction(node) {
         state.browseCache.clear();
         state.config = await api.config();
         updateModePill();
-        toast('TMDB disconnect — demo catalog par wapas');
+        toast('TMDB disconnect — bundled catalog par wapas');
         hideModal({ silent: true });
         overlayFromPush = false;
         lastBaseHash = null;
@@ -862,19 +904,22 @@ function refreshListButtons(type, id, inList) {
 }
 
 function updateModePill() {
-  const mode = state.config?.mode;
+  const cfg = state.config;
+  const mode = cfg?.mode;
   if (!mode) {
     el.modePill.hidden = true;
     return;
   }
+  el.modePill.hidden = false;
   if (mode === 'tmdb') {
-    el.modePill.hidden = false;
-    el.modePill.innerHTML = `<b>LIVE</b> · TMDB`;
+    el.modePill.innerHTML = `<b>TMDB</b> · live metadata`;
     if (el.footerProvider) el.footerProvider.textContent = 'TMDB';
+  } else if (cfg.live) {
+    el.modePill.innerHTML = `<b>LIVE</b> · 104 titles + online search`;
+    if (el.footerProvider) el.footerProvider.textContent = 'bundled catalog + iTunes/TVmaze';
   } else {
-    el.modePill.hidden = false;
-    el.modePill.innerHTML = `<b>DEMO</b> · key add karein`;
-    if (el.footerProvider) el.footerProvider.textContent = 'demo catalog';
+    el.modePill.innerHTML = `<b>LIBRARY</b> · 104 titles`;
+    if (el.footerProvider) el.footerProvider.textContent = 'bundled catalog';
   }
 }
 

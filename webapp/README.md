@@ -15,14 +15,18 @@ npm start
 
 ---
 
-## 2 modes
+## Sources — **koi API key zaroori nahi**
 
-| Mode | Kab | Kya milta hai |
+| Source | Key chahiye? | Kya deta hai |
 |---|---|---|
-| **Demo** (default) | koi key nahi | 56 titles ka local catalog, gradient posters, sab features (search, rows, recommendations, episodes, demo player) |
-| **Live (TMDB)** | Settings → TMDB key | real posters/backdrops, cast, seasons+episodes, **official trailers (YouTube)** |
+| **Bundled catalog** (default) | ❌ nahi | 104 **asli** titles (64 films + 40 series) — real title/year/rating/genre/cast, generated cinematic art, sab features |
+| **Live search** (auto) | ❌ nahi | internet mile to search me iTunes (films) + TVmaze (series) se real posters + **official trailer video** bhi aate hain |
+| **TMDB** (optional) | ✅ haan | real posters/backdrops, full cast, seasons+episodes, YouTube trailers |
 
-TMDB key lene ke liye: <https://www.themoviedb.org/settings/api> (free).
+Sirf **metadata + official promotional trailers** use hote hain — koi copyrighted full
+stream, koi CDN scrape, koi ad-wall bypass nahi.
+
+TMDB key dena optional hai: <https://www.themoviedb.org/settings/api> (free).
 Key **sirf server par** rehti hai (`webapp/.data/config.json`, gitignored) — browser tak
 kabhi nahi jaati. Env se bhi de sakte hain:
 
@@ -44,7 +48,7 @@ v3 API key (32 chars) aur v4 Read Token (JWT `eyJ…`) — dono support hain.
 - **Search** — debounced instant search, recent searches, genre/year queries, empty states
 - **Detail modal** — backdrop, cast, genres, director, trailer, similar titles,
   TV ke liye **Episodes** tab (season dropdown)
-- **Player** — TMDB mode me official trailer (YouTube), demo mode me cinematic canvas preview
+- **Player** — official trailer (`<video>`, mp4/m4v) jahan available ho; warna cinematic canvas preview
 - **My List** — localStorage, ek click me add/remove
 - **Responsive** — mobile bottom tab bar, sticky nav jo scroll par solid hoti hai
 - **Extras** — skeleton loading, toasts, keyboard shortcuts (`/` search, `Esc` close)
@@ -55,7 +59,8 @@ v3 API key (32 chars) aur v4 Read Token (JWT `eyJ…`) — dono support hain.
 
 | Endpoint | Kaam |
 |---|---|
-| `GET /api/config` | mode, key hint |
+| `GET /api/config` | mode, live status, key hint |
+| `POST /api/config/live` | internet dobara check karo (live search on/off) |
 | `POST /api/config/key` | `{ key }` verify + save (server-side) |
 | `DELETE /api/config/key` | disconnect |
 | `GET /api/home` | hero + saari rows |
@@ -63,7 +68,7 @@ v3 API key (32 chars) aur v4 Read Token (JWT `eyJ…`) — dono support hain.
 | `GET /api/search?q=…` | multi search (movie + tv) |
 | `GET /api/title/:type/:id` | full detail + cast + seasons + similar + trailer |
 | `GET /api/season/:type/:id/:n` | episodes |
-| `GET /api/play/:type/:id` | playable source (trailer / demo) |
+| `GET /api/play/:type/:id` | playable source (`file` trailer / `preview` / `none`) |
 | `GET /api/browse/:genre` | genre grid |
 | `GET /api/type/:type` | Movies ya TV Shows grid |
 | `GET /api/genres` | genre list + counts |
@@ -80,9 +85,11 @@ webapp/
 ├── server/
 │   ├── index.js              # http server, routing, static, config store
 │   ├── providers/
-│   │   ├── demo.js           # local catalog provider
+│   │   ├── local.js          # bundled catalog provider (104 titles)
+│   │   ├── open.js           # keyless live provider (iTunes + TVmaze)
 │   │   └── tmdb.js           # TMDB provider (key server-side)
-│   └── data/catalog.js       # 56 demo titles + genre gradients
+│   ├── data/catalog.js       # 104 real titles + genre art mapping
+│   └── public/art/*.jpg      # generated cinematic backdrops (8)
 ├── public/
 │   ├── index.html            # shell + icon sprite
 │   ├── css/app.css           # poora design system
@@ -101,7 +108,7 @@ provider.home()
 provider.search(q)          // -> { items, total }
 provider.title(type, id)    // -> { ...item, cast, seasons, similar, trailer }
 provider.season(type, id, n)
-provider.play(type, id)     // -> { kind: 'youtube' | 'file' | 'demo' | 'none', … }
+provider.play(type, id)     // -> { kind: 'youtube' | 'file' | 'preview' | 'none', … }
 provider.forYou(history)    // -> { items, reason }
 provider.browse(genre)
 provider.typePage(type)

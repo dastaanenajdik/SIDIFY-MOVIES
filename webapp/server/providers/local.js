@@ -1,8 +1,8 @@
 /**
- * Demo provider — koi network call nahi, sab local catalog se.
- * Same interface jo TMDB provider deta hai, isliye server/UI ko farq nahi padta.
+ * Catalog provider — 104 real titles, koi network call nahi, koi API key nahi.
+ * Same interface jo TMDB / live provider deta hai, isliye UI ko farq nahi padta.
  */
-import { CATALOG, GENRES, GENRE_COLORS } from '../data/catalog.js';
+import { CATALOG, GENRES, GENRE_COLORS, FEATURED } from '../data/catalog.js';
 
 const byId = new Map(CATALOG.map((x) => [`${x.mediaType}:${x.id}`, x]));
 
@@ -41,7 +41,9 @@ export function normalize(item, { compact = false } = {}) {
     runtime: item.runtime,
     tagline: item.tagline,
     colors: gradientFor(item),
-    source: 'demo',
+    art: item.art || null,
+    artPos: item.artPos || '50% 50%',
+    source: 'catalog',
   };
   if (compact) return base;
   return {
@@ -59,7 +61,7 @@ export function normalize(item, { compact = false } = {}) {
         ? Array.from({ length: item.seasons || 1 }, (_, i) => ({
             seasonNumber: i + 1,
             name: `Season ${i + 1}`,
-            episodeCount: 6 + ((item.id + i) % 4),
+            episodeCount: item.episodes || 6 + ((item.id + i) % 4),
             year: item.year + i,
           }))
         : [],
@@ -84,8 +86,11 @@ function byGenre(genreIdOrName, limit = 18) {
   const id = isName
     ? Number(Object.keys(GENRES).find((k) => GENRES[k].toLowerCase() === genreIdOrName.toLowerCase()))
     : Number(genreIdOrName);
+  // jo title us genre ka *primary* hai woh upar — warna "Comedies" row me
+  // dark-thriller posters sabse pehle aa jaate hain
+  const primary = (x) => (x.genres[0] === id ? 0 : 1);
   return CATALOG.filter((x) => x.genres.includes(id))
-    .sort((a, b) => b.rating - a.rating)
+    .sort((a, b) => primary(a) - primary(b) || b.rating - a.rating)
     .slice(0, limit);
 }
 
@@ -99,7 +104,7 @@ function pick(list, n) {
 /** home rows — history optional: [{ id, mediaType, genres:[], title }] */
 export function home({ history = [] } = {}) {
   const heroItem =
-    CATALOG.find((x) => x.id === 1014) || sortedBy('rating')[0];
+    CATALOG.find((x) => x.id === FEATURED.movie) || sortedBy('rating')[0];
 
   const rows = [
     {
@@ -182,9 +187,11 @@ export function home({ history = [] } = {}) {
   ];
 
   return {
-    mode: 'demo',
+    mode: 'catalog',
     hero: {
       ...normalize(heroItem),
+      art: 'hero',
+      artPos: '50% 45%',
       reason: 'Featured today',
     },
     rows: rows.filter((r) => r.items.length >= 4),
@@ -200,7 +207,7 @@ export function search(q) {
   if (!term) return { items: [], total: 0, query: term };
   const words = term.split(/\s+/);
   const scored = CATALOG.map((item) => {
-    const hay = `${item.title} ${item.genreNames || ''} ${item.genres.map(genreName).join(' ')} ${item.overview}`.toLowerCase();
+    const hay = `${item.title} ${item.genres.map(genreName).join(' ')} ${item.overview} ${item.director} ${(item.cast || []).join(' ')}`.toLowerCase();
     let score = 0;
     if (item.title.toLowerCase() === term) score += 100;
     if (item.title.toLowerCase().startsWith(term)) score += 50;
@@ -229,7 +236,7 @@ export function season(type, id, n) {
   const item = byId.get(`${type}:${id}`);
   if (!item || item.mediaType !== 'tv') return null;
   const seasonNumber = Number(n) || 1;
-  const count = 6 + ((item.id + seasonNumber) % 4);
+  const count = item.episodes || 6 + ((item.id + seasonNumber) % 4);
   return {
     seasonNumber,
     episodes: Array.from({ length: count }, (_, i) => ({
@@ -251,11 +258,10 @@ export function play(type, id) {
   const item = byId.get(`${type}:${id}`);
   if (!item) return null;
   return {
-    kind: 'demo',
+    kind: 'preview',
     title: item.title,
     colors: gradientFor(item),
-    message:
-      'Demo mode: real stream nahi hai. TMDB key add karne par official trailers chalenge.',
+    message: `${item.title} (${item.year}) — catalog preview. Full stream ke liye apna licensed source provider me plug karein.`,
   };
 }
 
@@ -316,4 +322,4 @@ export function genres() {
     .sort((a, b) => b.count - a.count);
 }
 
-export const provider = { id: 'demo', home, search, title, season, play, forYou, browse, genres, typePage };
+export const provider = { id: 'catalog', home, search, title, season, play, forYou, browse, genres, typePage };
