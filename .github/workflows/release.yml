@@ -1,0 +1,275 @@
+name: Build & Release APK
+
+# Jab bhi aap `v*` tag push karo (jaise v3.0.1) ya manually run karo,
+# yeh workflow APK build karta hai, "default key" se sign karta hai
+# aur GitHub Release me APK attach kar deta hai.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'versionName (jaise 3.0.1) - khaali chhodo to 3.0'
+        required: false
+        default: ''
+      version_code:
+        description: 'versionCode (integer) - khaali chhodo to auto'
+        required: false
+        default: ''
+      release_tag:
+        description: 'Release tag (jaise v3.0.1) - khaali chhodo to auto'
+        required: false
+        default: ''
+      create_release:
+        description: 'GitHub Release banao?'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  APKTOOL_VERSION: '2.12.1'
+  BUILD_TOOLS: '35.0.0'
+  ANDROID_PLATFORM: 'android-35'
+  # Default signing key (repo me committed) -> "key default" behaviour
+  DEFAULT_KEYSTORE: 'keys/sidify-release.p12'
+  DEFAULT_KEY_ALIAS: 'sidify'
+
+jobs:
+  build:
+    name: Build + Sign + Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+
+      - name: Versions / tag decide karo
+        id: ver
+        env:
+          IN_NAME: ${{ github.event.inputs.version_name }}
+          IN_CODE: ${{ github.event.inputs.version_code }}
+          IN_TAG: ${{ github.event.inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          TAG=""
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME}"
+            NAME="${TAG#v}"
+          else
+            NAME="${IN_NAME:-3.0}"
+            TAG="${IN_TAG:-v${NAME}-build${GITHUB_RUN_NUMBER}}"
+          fi
+          NAME="${IN_NAME:-$NAME}"
+          # versionCode: input > tag (v3.0.1 -> 30001) > 1
+          CODE="${IN_CODE:-}"
+          if [ -z "$CODE" ]; then
+            if printf '%s' "$NAME" | grep -Eq '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+              MAJ="$(echo "$NAME" | cut -d. -f1)"
+              MIN="$(echo "$NAME" | cut -d. -f2)"
+              PAT="$(echo "$NAME" | cut -d. -f3)"
+              PAT="${PAT:-0}"
+              CODE="$(( MAJ * 10000 + MIN * 100 + PAT ))"
+            else
+              CODE="1"
+            fi
+          fi
+          echo "version_name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "APK_NAME=SidifyMovies-${NAME}.apk" >> "$GITHUB_OUTPUT"
+          echo "==> versionName=$NAME versionCode=$CODE tag=$TAG"
+
+      - name: apktool download karo
+        run: |
+          set -euo pipefail
+          curl -sSL -o apktool.jar \
+            "https://github.com/iBotPeaches/Apktool/releases/download/v${APKTOOL_VERSION}/apktool_${APKTOOL_VERSION}.jar"
+          ls -lh apktool.jar
+
+      - name: Build project assemble karo
+        env:
+          VERSION_NAME: ${{ steps.ver.outputs.version_name }}
+          VERSION_CODE: ${{ steps.ver.outputs.version_code }}
+        run: bash scripts/prepare-apk-project.sh
+
+      - name: Framework (android.jar) apktool ke liye ready karo
+        run: |
+          set -euo pipefail
+          mkdir -p .frameworks
+          cp "$ANDROID_HOME/platforms/${ANDROID_PLATFORM}/android.jar" .frameworks/1.apk
+          ls -lh .frameworks
+
+      - name: apktool build (resources + smali -> APK)
+        run: |
+          set -o pipefail
+          mkdir -p dist
+          java -jar apktool.jar b build/apk -o dist/unsigned.apk --frame-path .frameworks 2>&1 | tee build.log
+          ls -lh dist/
+
+      - name: Build errors (log annotations me dikhao)
+        if: failure()
+        run: |
+          if [ -f build.log ]; then
+            tail -n 25 build.log | while IFS= read -r line; do
+              echo "::error::$(printf '%s' "$line" | head -c 500)"
+            done
+          fi
+
+      - name: Extra APK root files add karo (kotlin/, DebugProbesKt.bin ...)
+        run: python3 scripts/add-apk-extras.py dist/unsigned.apk build/extras
+
+      - name: zipalign + sign (default key, secrets se override)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          BT="$ANDROID_HOME/build-tools/${BUILD_TOOLS}"
+
+          KS="$DEFAULT_KEYSTORE"
+          ALIAS="$DEFAULT_KEY_ALIAS"
+          PASS="${KS_PASS:-SidifyMovies2026}"
+          KPASS="${KEY_PASS:-$PASS}"
+
+          if [ -n "${KS_B64:-}" ]; then
+            echo "==> Repository secrets wali keystore use ho rahi hai"
+            echo "$KS_B64" | base64 -d > /tmp/release.keystore
+            KS="/tmp/release.keystore"
+            [ -n "${KEY_ALIAS:-}" ] && ALIAS="$KEY_ALIAS"
+          else
+            echo "==> DEFAULT key use ho rahi hai: $DEFAULT_KEYSTORE (alias: $ALIAS)"
+          fi
+
+          "$BT/zipalign" -p -f 4 dist/unsigned.apk dist/aligned.apk
+
+          ARGS=(--ks "$KS" --ks-pass "pass:$PASS" --ks-key-alias "$ALIAS" --key-pass "pass:$KPASS")
+          case "$KS" in
+            *.p12|*.pfx|*.pkcs12) ARGS+=(--ks-type PKCS12) ;;
+          esac
+
+          "$BT/apksigner" sign "${ARGS[@]}" \
+            --out "dist/${{ steps.ver.outputs.APK_NAME }}" dist/aligned.apk
+
+          "$BT/apksigner" verify --verbose --print-certs "dist/${{ steps.ver.outputs.APK_NAME }}"
+
+      - name: APK verify + info
+        run: |
+          set -euo pipefail
+          BT="$ANDROID_HOME/build-tools/${BUILD_TOOLS}"
+          APK="dist/${{ steps.ver.outputs.APK_NAME }}"
+
+          echo "### APK gyaan" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          # 1) manifest / badging (yeh fail hua to APK hi galat hai)
+          "$BT/aapt" dump badging "$APK" | head -12 | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 2) zip structure
+          unzip -l "$APK" > /tmp/list.txt || true
+          echo "--- zip entries ---" | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -E '(classes[0-9]*\.dex|resources\.arsc|AndroidManifest\.xml|assets/index\.android\.bundle)$' /tmp/list.txt | tee -a "$GITHUB_STEP_SUMMARY" | head -3
+
+          echo "--- counts ---" | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo "total entries : $(tail -1 /tmp/list.txt | awk '{print $2}')"
+            echo "dex files     : $(grep -cE 'classes[0-9]*\.dex$' /tmp/list.txt || true)"
+            echo "native .so    : $(grep -cE '\.so$' /tmp/list.txt || true)"
+            echo "res/ entries  : $(grep -cE '(^| )res/' /tmp/list.txt || true)"
+            echo "kotlin/ files : $(grep -cE 'kotlin/' /tmp/list.txt || true)"
+            echo "arsc size     : $(grep 'resources.arsc' /tmp/list.txt | awk '{print $1}' | head -1)"
+            echo "dex size      : $(grep -E 'classes[0-9]*\.dex$' /tmp/list.txt | awk '{s+=$1} END {print s+0}')"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 3) resource IDs (public.xml ke IDs preserve hue? -> app smali inhi IDs
+          #    par depend karta hai, mismatch = runtime crash)
+          echo "--- resource ID check ---" | tee -a "$GITHUB_STEP_SUMMARY"
+          "$BT/aapt2" dump resources "$APK" 2>/dev/null > /tmp/res.txt || true
+          fail=0
+          check_id() {
+            name="$1"; expect="$2"
+            got="$(grep -m1 "$name" /tmp/res.txt | grep -oE '0x7f[0-9a-f]+' | head -1 || true)"
+            if [ "$got" = "$expect" ]; then
+              echo "OK   $name = $got"
+              echo "::notice::ID OK  $name = $got"
+            else
+              echo "FAIL $name: expected $expect, mila '$got'"
+              echo "::error::ID FAIL $name: expected $expect, mila '$got'"
+              fail=1
+            fi
+          }
+          {
+            check_id "drawable/abc_ab_share_pack_mtrl_alpha" "0x7f070002"
+            check_id "mipmap/ic_launcher" "0x7f0c0000"
+            check_id "string/app_name" "0x7f0d001d"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$fail" != "0" ]; then
+            echo "::error::resource ID mismatch — app runtime par crash kar sakta hai"
+            exit 1
+          fi
+          echo "resource IDs public.xml se match ho rahe hain"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          ls -lh dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.ver.outputs.tag }}-apk
+          path: dist/${{ steps.ver.outputs.APK_NAME }}
+          if-no-files-found: error
+
+      - name: GitHub Release create karo
+        if: ${{ github.event_name == 'push' || github.event.inputs.create_release == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          NAME: ${{ steps.ver.outputs.version_name }}
+          CODE: ${{ steps.ver.outputs.version_code }}
+          APK: ${{ steps.ver.outputs.APK_NAME }}
+        run: |
+          set -euo pipefail
+          NOTES="$(cat <<EOF
+          **Sidify Movies / NetMirror — APK**
+
+          | | |
+          |---|---|
+          | versionName | \`${NAME}\` |
+          | versionCode | \`${CODE}\` |
+          | Package | \`app.netmirror.netmirrornew\` |
+          | Min / Target SDK | 24 / 35 |
+          | Signed with | default release key (repo: \`keys/\`) |
+          | Commit | \`${GITHUB_SHA}\` |
+
+          Install: APK download karke "Install unknown apps" allow karein.
+          EOF
+          )"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "dist/$APK" --clobber
+          else
+            gh release create "$TAG" "dist/$APK" --title "Sidify Movies ${NAME}" --notes "$NOTES"
+          fi
+          gh release view "$TAG" --json url,tagName,assets -q '.url, .tagName, (.assets[].name)'

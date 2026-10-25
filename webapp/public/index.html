@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SIDIFY — Movies & Series</title>
+  <meta name="description" content="SIDIFY — browse, search and discover movies & series." />
+  <meta name="theme-color" content="#08080a" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://image.tmdb.org" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <!-- ---------- icon sprite ---------- -->
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 1 0-.7.7l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></symbol>
+      <symbol id="i-chev-left" viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12z"/></symbol>
+      <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="M8.6 16.6 10 18l6-6-6-6-1.4 1.4L13.2 12z"/></symbol>
+      <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="M7.4 8.6 6 10l6 6 6-6-1.4-1.4L12 13.2z"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7zm7.4-2.6.9-.7 -1-1.7-.9.4a7 7 0 0 0-1.6-.9l-.1-1h-2l-.2 1a7 7 0 0 0-1.6.9l-.9-.4-1 1.7.9.7a7 7 0 0 0 0 1.9l-.9.7 1 1.7.9-.4c.5.4 1 .7 1.6.9l.2 1h2l.1-1c.6-.2 1.1-.5 1.6-.9l.9.4 1-1.7-.9-.7c.1-.3.1-.6.1-.9s0-.6-.1-.9z"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 17.3-6.2 3.7 1.6-7L2 9.2l7.1-.6L12 2l2.9 6.6 7.1.6-5.4 4.8 1.6 7z"/></symbol>
+      <symbol id="i-thumb" viewBox="0 0 24 24"><path d="M2 10h4v10H2zm20 0a2 2 0 0 0-2-2h-5.3l.9-3.6v-.4a1.5 1.5 0 0 0-.4-1L14 2 8 8.3V20h9a2 2 0 0 0 2-1.6l1.7-7.4c0-.3.1-.7.1-1z"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4zm15.6 3 2.1-2.1-1.4-1.4-2.1 2.1-2.1-2.1-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4z"/></symbol>
+      <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></symbol>
+      <symbol id="i-film" viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 2v3h3V6H6zm9 0v3h3V6h-3zM6 11v3h3v-3H6zm9 0v3h3v-3h-3zM6 16v2h3v-2H6zm9 0v2h3v-2h-3z"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- ---------- nav ---------- -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <div class="nav__left">
+        <a class="brand" href="#/" aria-label="SIDIFY home">
+          <span class="brand__mark">S</span>
+          <span class="brand__text">SIDIFY</span>
+        </a>
+        <nav class="nav__links" id="nav-links">
+          <a href="#/" data-route="home">Home</a>
+          <a href="#/browse/Series" data-route="series">TV Shows</a>
+          <a href="#/browse/Movies" data-route="movies">Movies</a>
+          <a href="#/new" data-route="new">New &amp; Popular</a>
+          <a href="#/list" data-route="list">My List</a>
+        </nav>
+      </div>
+
+      <div class="nav__right">
+        <button class="icon-btn" id="search-toggle" aria-label="Search movies and series">
+          <svg class="icon"><use href="#i-search" /></svg>
+        </button>
+        <button class="icon-btn" id="settings-btn" aria-label="Settings">
+          <svg class="icon"><use href="#i-gear" /></svg>
+        </button>
+        <button class="avatar" id="avatar" aria-label="Profile">
+          <span>S</span>
+          <svg class="icon icon--tiny"><use href="#i-chev-down" /></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mode-pill" id="mode-pill" hidden></div>
+  </header>
+
+  <!-- ---------- main ---------- -->
+  <main id="view" class="view" aria-live="polite"></main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <p class="footer__brand">SIDIFY</p>
+      <p class="footer__note">
+        Netflix-style front-end. Metadata: <span id="footer-provider">bundled catalog</span>.
+        Koi copyrighted stream host nahi hota.
+      </p>
+      <p class="footer__links">
+        <a href="#/browse/Movies">Movies</a><span>·</span>
+        <a href="#/browse/Series">Series</a><span>·</span>
+        <a href="#/new">New &amp; Popular</a><span>·</span>
+        <a href="#/settings">Settings</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ---------- overlays ---------- -->
+  <div class="search-panel" id="search-panel" hidden>
+    <div class="search-panel__bar">
+      <svg class="icon"><use href="#i-search" /></svg>
+      <input id="search-input" type="search" placeholder="Titles, genres, years…" autocomplete="off" spellcheck="false" />
+      <button class="icon-btn" id="search-close" aria-label="Close search"><svg class="icon"><use href="#i-close" /></svg></button>
+    </div>
+    <div class="search-panel__body" id="search-results"></div>
+  </div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal__scrim" data-close="modal"></div>
+    <div class="modal__panel" id="modal-panel" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <div class="player" id="player" hidden></div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <nav class="tabbar" aria-label="Mobile navigation">
+    <a href="#/" data-route="home">
+      <svg class="icon"><use href="#i-film" /></svg><span>Home</span>
+    </a>
+    <a href="#/browse/Series" data-route="series">
+      <svg class="icon"><use href="#i-play" /></svg><span>Series</span>
+    </a>
+    <a href="#/browse/Movies" data-route="movies">
+      <svg class="icon"><use href="#i-star" /></svg><span>Movies</span>
+    </a>
+    <a href="#/list" data-route="list">
+      <svg class="icon"><use href="#i-plus" /></svg><span>My List</span>
+    </a>
+    <a href="#" data-tab-search>
+      <svg class="icon"><use href="#i-search" /></svg><span>Search</span>
+    </a>
+  </nav>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Build outputs
+build/
+dist/
+.frameworks/
+*.apk
+*.aab
+*.idsig
+*.zip
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# NOTE: keys/ jaan-boojh kar commit kiya gaya hai (default signing key).
+
+# Webapp runtime data (TMDB key)
+webapp/.data/
