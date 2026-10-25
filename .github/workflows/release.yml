@@ -204,9 +204,31 @@ jobs:
             echo "dex size      : $(grep -E 'classes[0-9]*\.dex$' /tmp/list.txt | awk '{s+=$1} END {print s+0}')"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-          # 3) resource IDs (public.xml ke IDs preserve hue?)
+          # 3) resource IDs (public.xml ke IDs preserve hue? -> app smali inhi IDs
+          #    par depend karta hai, mismatch = runtime crash)
           echo "--- resource ID check ---" | tee -a "$GITHUB_STEP_SUMMARY"
-          "$BT/aapt2" dump resources "$APK" 2>/dev/null | grep -E "string/app_name|drawable/abc_ab_share_pack_mtrl_alpha|mipmap/ic_launcher" | head -6 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          "$BT/aapt2" dump resources "$APK" 2>/dev/null > /tmp/res.txt || true
+          fail=0
+          check_id() {
+            name="$1"; expect="$2"
+            got="$(grep -m1 "$name" /tmp/res.txt | grep -oE '0x7f[0-9a-f]+' | head -1 || true)"
+            if [ "$got" = "$expect" ]; then
+              echo "OK   $name = $got"
+            else
+              echo "FAIL $name: expected $expect, mila '$got'"
+              fail=1
+            fi
+          }
+          {
+            check_id "drawable/abc_ab_share_pack_mtrl_alpha" "0x7f070002"
+            check_id "mipmap/ic_launcher" "0x7f0c0000"
+            check_id "string/app_name" "0x7f0d001d"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$fail" != "0" ]; then
+            echo "::error::resource ID mismatch — app runtime par crash kar sakta hai"
+            exit 1
+          fi
+          echo "resource IDs public.xml se match ho rahe hain"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
           ls -lh dist/
