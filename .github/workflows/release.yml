@@ -123,10 +123,19 @@ jobs:
 
       - name: apktool build (resources + smali -> APK)
         run: |
-          set -euo pipefail
+          set -o pipefail
           mkdir -p dist
-          java -jar apktool.jar b build/apk -o dist/unsigned.apk --frame-path .frameworks
+          java -jar apktool.jar b build/apk -o dist/unsigned.apk --frame-path .frameworks 2>&1 | tee build.log
           ls -lh dist/
+
+      - name: Build errors (log annotations me dikhao)
+        if: failure()
+        run: |
+          if [ -f build.log ]; then
+            tail -n 25 build.log | while IFS= read -r line; do
+              echo "::error::$(printf '%s' "$line" | head -c 500)"
+            done
+          fi
 
       - name: Extra APK root files add karo (kotlin/, DebugProbesKt.bin ...)
         run: python3 scripts/add-apk-extras.py dist/unsigned.apk build/extras
