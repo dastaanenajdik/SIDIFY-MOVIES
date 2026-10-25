@@ -100,41 +100,45 @@ App inhe ek-ek karke try karta hai (server-side rotation ke liye).
 ```js
 GET  <domain>/check.php          (timeout 5000 ms)
    → { token_hash, stape, u }
-token        = base64Decode(token_hash)
-streamUrl    = base64Decode(stape)      // WebView isi URL par khulta hai
-domainList   = u                        // server naya domain list bhej sakta hai
+webviewUrl = base64Decode(token_hash)   // e.g. https://net52.cc/mobile/home?app=1
+postUrl    = base64Decode(stape)        // e.g. https://net52.cc/streamtape.php
+domainList = u                          // server naya domain list bhej sakta hai
 ```
 
-### 4.3 WebView
+Server config ko base64 me chhupa kar bhejta hai — isliye build ke andar koi
+hardcoded site URL nahi milta. (Same flow bahar se bhi verify hua hai:
+[networkshard](https://networkshard.com/blog/netmirror-smuggled-video/),
+[medium](https://medium.com/@sameerimr384/i-reverse-engineered-netmirror-what-the-apk-actually-does-c6fbe13cb3e1))
+
+### 4.3 WebView (yahi “player” hai)
 
 ```jsx
 <WebView
-  source={{ uri: streamUrl, headers: { 'X-Requested-With': token } }}
+  source={{ uri: webviewUrl, headers: { 'X-Requested-With': '' } }}
   userAgent={deviceUA + ' /OS.Gatu v3.0'}
   javaScriptEnabled domStorageEnabled nestedScrollEnabled
   onMessage={handleWebViewMessage}
   onLoadStart/onLoadEnd/onHttpError ... />
 ```
-Website (WebView ke andar) `window.ReactNativeWebView.postMessage(...)` se app ko
-message bhejti hai. Do message types handle hote hain:
-- `downloadStart=<url>` → download flow
-- (baaki) console log
+APK me koi video player library nahi hai (na ExoPlayer, na FFmpeg, na HLS lib —
+44 `.so` check kiye). Playback **Android WebView ke HTML5 player** me hota hai —
+website ke andar `hls.js`/`<video>` chalta hai, HLS + CDN se stream aata hai.
 
-### 4.4 Download flow (`fetchSourceAndPost`)
+### 4.4 Download flow (`fetchSourceAndPost`) — Streamtape scraping
 
 ```js
 for (domain of domains) {
   res = GET  domain + path                      // headers: X-Requested-With:'' , User-Agent
                                                 // timeout 8000 ms
   streamDomain = res.url.match(/^https?:\/\/([^/?#]+)/)[1]
-  POST streamUrl  { stdata: res.data, streamDomain }   // x-www-form-urlencoded
+  POST postUrl  { stdata: res.data, streamDomain }     // x-www-form-urlencoded
       → { status:'ok', dlUrl }
   Linking.openURL(dlUrl)                        // browser me download shuru
 }
 ```
-Errors par toast: `ERROR Code: 1 / 2 / 3 / 69` with messages
-“Something Wrong With API url”, “Something Wrong With Download Link”,
-“Token Hash not found.” etc.
+Yani website `downloadStart=<path>` bhejti hai → app us page ka **HTML** uthata
+hai (`stdata`) → apne `streamtape.php` par bhejta hai → backend signed `dlUrl`
+nikal kar deta hai → browser me khul jata hai.
 
 ### 4.5 Player controls (native-feel UI)
 
