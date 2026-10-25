@@ -214,8 +214,10 @@ jobs:
             got="$(grep -m1 "$name" /tmp/res.txt | grep -oE '0x7f[0-9a-f]+' | head -1 || true)"
             if [ "$got" = "$expect" ]; then
               echo "OK   $name = $got"
+              echo "::notice::ID OK  $name = $got"
             else
               echo "FAIL $name: expected $expect, mila '$got'"
+              echo "::error::ID FAIL $name: expected $expect, mila '$got'"
               fail=1
             fi
           }
