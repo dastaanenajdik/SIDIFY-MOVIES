@@ -14,3 +14,6 @@ Thumbs.db
 .vscode/
 
 # NOTE: keys/ jaan-boojh kar commit kiya gaya hai (default signing key).
+
+# Webapp runtime data (TMDB key)
+webapp/.data/

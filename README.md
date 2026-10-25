@@ -6,6 +6,21 @@ Decompiled Android APK (React Native) + **GitHub Actions se APK build, sign aur 
 - Build pipeline: `.github/workflows/release.yml`
 - Default signing key: `keys/` (README wahan hai)
 
+## 🌐 Web app (Netflix-style)
+
+`webapp/` folder me ek chalti hui Netflix-clone website hai (zero dependencies):
+
+```bash
+cd webapp && node server/index.js     # http://localhost:3000
+```
+
+Features: hero billboard, 10 curated rows, Top 10, search, My List, detail modal,
+episodes, player, recommended-for-you. Demo catalog ke saath turant chalti hai;
+Settings me TMDB key daalne par real posters/backdrops/trailers aa jaate hain.
+Detail: [webapp/README.md](webapp/README.md)
+
+---
+
 ## Release kaise karein
 
 ```bash
