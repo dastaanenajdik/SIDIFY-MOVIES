@@ -34,6 +34,9 @@ cp -a "$ROOT/resources/lib"    "$PROJ/lib"
 echo "==> Copying smali (dex source)"
 cp -a "$ROOT/smali" "$PROJ/smali"
 
+echo "==> Fixing decompiled resources for aapt2"
+python3 "$ROOT/scripts/fix-resources.py" "$PROJ/res"
+
 # Yeh files APK root me rehti hain but apktool inhe "unknown" maanta hai ->
 # build ke baad seedha zip me daal denge (script: add-apk-extras.py)
 cp -a "$ROOT/resources/kotlin"                     "$EXTRAS/kotlin"
