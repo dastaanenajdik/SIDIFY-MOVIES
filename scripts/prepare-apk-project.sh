@@ -34,6 +34,9 @@ cp -a "$ROOT/resources/lib"    "$PROJ/lib"
 echo "==> Copying smali (dex source)"
 cp -a "$ROOT/smali" "$PROJ/smali"
 
+echo "==> Splitting multi-class smali files"
+python3 "$ROOT/scripts/split-smali.py" "$PROJ/smali"
+
 echo "==> Fixing decompiled resources for aapt2"
 python3 "$ROOT/scripts/fix-resources.py" "$PROJ/res"
 python3 "$ROOT/scripts/fix-values.py" "$PROJ/res"

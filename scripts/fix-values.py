@@ -58,6 +58,21 @@ ENUM_MAP = {
 ITEM_RE = re.compile(r'(<item name="([^"]+)">)\s*(0x[0-9a-fA-F]+|-?\d+)\s*(</item>)')
 
 
+def _norm(value: str) -> str:
+    """'0x0' -> '0', '-2' -> '-2' (sab comparison decimal me ho)."""
+    try:
+        return str(int(value, 0))
+    except ValueError:
+        return value
+
+
+# map ke keys bhi normalize kar do
+ENUM_MAP = {
+    attr: {_norm(k): v for k, v in table.items()}
+    for attr, table in ENUM_MAP.items()
+}
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__)
@@ -85,7 +100,7 @@ def main() -> int:
                 table = ENUM_MAP.get(attr)
                 if not table:
                     return m.group(0)
-                name = table.get(val)
+                name = table.get(_norm(val))
                 if not name:
                     return m.group(0)
                 count += 1
