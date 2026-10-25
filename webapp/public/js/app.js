@@ -672,7 +672,9 @@ async function openSettings({ fromRoute = false } = {}) {
       }
       <p style="font-size:12.5px;color:#6c6c78">
         Note: yeh project metadata (TMDB) aur official trailers use karta hai. Koi
-        copyrighted stream host ya proxy nahi hota.
+        copyrighted stream host ya proxy nahi hota.<br />
+        Agar hosted preview me TMDB reachable na ho, to project apne computer par
+        chalayein (<code>node server/index.js</code>) — wahan live mode kaam karega.
       </p>
     </div>`;
 
@@ -813,7 +815,9 @@ async function handleAction(node) {
         navigate('#/', { replace: true });
         syncLock();
       } catch (err) {
+        const hint = err?.payload?.hint;
         toast(err.message || 'Key verify nahi hui');
+        if (hint) setTimeout(() => toast(hint), 700);
         node.disabled = false;
         node.textContent = 'Save';
       }

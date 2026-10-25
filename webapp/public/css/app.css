@@ -53,6 +53,10 @@ img {
   max-width: 100%;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -649,6 +653,24 @@ input {
   pointer-events: none;
 }
 
+.art-mark {
+  position: absolute;
+  top: -6%;
+  right: 4%;
+  font-size: clamp(72px, 7.2vw, 112px);
+  font-weight: 900;
+  line-height: 0.75;
+  letter-spacing: -0.06em;
+  color: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.card--wide .art-mark {
+  font-size: clamp(96px, 10vw, 150px);
+}
+
 .card__art.is-fallback::after {
   content: attr(data-title);
   position: absolute;
@@ -668,7 +690,25 @@ input {
   overflow: hidden;
 }
 
-.card--wide .card__art.is-fallback::after {
+.card--wide .art-mark {
+  position: absolute;
+  top: -6%;
+  right: 4%;
+  font-size: clamp(72px, 7.2vw, 112px);
+  font-weight: 900;
+  line-height: 0.75;
+  letter-spacing: -0.06em;
+  color: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.card--wide .art-mark {
+  font-size: clamp(96px, 10vw, 150px);
+}
+
+.card__art.is-fallback::after {
   font-size: clamp(16px, 1.7vw, 24px);
 }
 
@@ -849,7 +889,8 @@ input {
   padding: 0 var(--pad) 4rem;
 }
 
-.grid .card {
+.grid .card,
+.mini-grid .card {
   width: auto;
 }
 

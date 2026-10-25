@@ -109,6 +109,17 @@ export function home({ history = [] } = {}) {
       items: pick(sortedBy('popularity', 1).filter((x) => x.popularity > 12), 14),
     },
     {
+      key: 'picks',
+      title: 'Top Picks for You',
+      layout: 'poster',
+      items: pick(
+        [...CATALOG].sort(
+          (a, b) => b.rating * 7 + b.popularity * 0.3 - (a.rating * 7 + a.popularity * 0.3)
+        ),
+        16
+      ),
+    },
+    {
       key: 'top10',
       title: 'Top 10 Today',
       layout: 'ranked',

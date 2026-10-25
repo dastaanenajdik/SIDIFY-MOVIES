@@ -154,9 +154,17 @@ async function handleApi(req, res, url) {
       try {
         await new TmdbProvider(key).get('/configuration');
       } catch (err) {
+        const netFail = /fetch failed|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNREFUSED|network/i.test(
+          err.message
+        );
         return json(res, 400, {
-          error: 'TMDB key verify nahi hui',
+          error: netFail
+            ? 'Server se TMDB tak network nahi pahunch raha'
+            : 'TMDB key verify nahi hui',
           detail: err.message,
+          hint: netFail
+            ? 'Sandboxed preview me outbound internet blocked hota hai. Project ko apne computer ya VPS par chalayein (node server/index.js) — wahan key chalegi.'
+            : undefined,
         });
       }
       config.tmdbKey = key;
@@ -229,6 +237,8 @@ async function handleApi(req, res, url) {
       hint:
         err.status === 401
           ? 'TMDB key galat lag rahi hai — settings me naya key daalein.'
+          : /fetch failed|ENOTFOUND|EAI_AGAIN|ETIMEDOUT/i.test(err.message)
+          ? 'Is environment se TMDB reachable nahi hai — apne computer par chalayein.'
           : undefined,
     });
   }

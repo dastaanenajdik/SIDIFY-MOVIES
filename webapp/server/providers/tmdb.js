@@ -99,7 +99,7 @@ export class TmdbProvider {
   }
 
   async home() {
-    const [trending, top10, nowPlaying, popularTv, action, comedy, horror, scifi, acclaimed, romance] =
+    const [trending, top10, nowPlaying, popularTv, action, comedy, horror, scifi, acclaimed, romance, topRated] =
       await Promise.all([
         this.get('/trending/all/week'),
         this.get('/trending/all/day'),
@@ -111,6 +111,7 @@ export class TmdbProvider {
         this.get('/discover/movie', { with_genres: '878,14', sort_by: 'popularity.desc', 'vote_count.gte': 100 }),
         this.get('/discover/movie', { sort_by: 'vote_average.desc', 'vote_count.gte': 800 }),
         this.get('/discover/movie', { with_genres: '10749', sort_by: 'popularity.desc', 'vote_count.gte': 100 }),
+        this.get('/movie/top_rated'),
       ]);
 
     const list = (r, n = 18) =>
@@ -126,6 +127,7 @@ export class TmdbProvider {
 
     const rows = [
       { key: 'trending', title: 'Trending Now', layout: 'wide', items: list(trending, 16) },
+      { key: 'picks', title: 'Top Picks for You', layout: 'poster', items: list(topRated, 16) },
       { key: 'top10', title: 'Top 10 Today', layout: 'ranked', items: list(top10, 10) },
       { key: 'new', title: 'New Releases', layout: 'poster', items: list(nowPlaying, 16) },
       { key: 'series', title: 'Popular Series', layout: 'poster', items: list(popularTv, 16) },

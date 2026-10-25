@@ -73,6 +73,7 @@ export function card(item, { layout = 'poster', rank = null, taste = [] } = {}) 
            data-title="${esc((item.title || '').toUpperCase())}"
            style="${colorsOf(item)}">
         ${poster}
+        ${item.poster ? '' : `<span class="art-mark" aria-hidden="true">${esc((item.title || '?')[0])}</span>`}
         ${badges ? `<div class="card__badges">${badges}</div>` : ''}
         <div class="card__glow">
           <div class="card__title">${esc(item.title)}</div>
