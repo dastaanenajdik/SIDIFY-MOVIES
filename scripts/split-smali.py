@@ -63,6 +63,7 @@ def main() -> int:
 
     split_files = 0
     new_files = 0
+    removed = []
     errors = []
     seen = {}
 
@@ -71,7 +72,13 @@ def main() -> int:
             lines = fh.read().splitlines(keepends=True)
 
         idx = [i for i, ln in enumerate(lines) if ln.startswith(".class")]
-        if len(idx) <= 1:
+        if not idx:
+            # koi class nahi (jaise jadx ka R.smali stub) -> smali assembler ise
+            # padh nahi sakta, isliye delete kar dete hain
+            os.remove(path)
+            removed.append(path)
+            continue
+        if len(idx) == 1:
             continue
 
         bounds = idx + [len(lines)]
@@ -109,6 +116,10 @@ def main() -> int:
         split_files += 1
 
     print(f"[+] {split_files} file(s) split hui, {new_files} nayi class file bani")
+    if removed:
+        print(f"[+] {len(removed)} empty stub file hataayi:")
+        for r in removed[:10]:
+            print(f"    - {os.path.relpath(r, root)}")
     if errors:
         print(f"[!] {len(errors)} problem:")
         for p, e in errors[:15]:
