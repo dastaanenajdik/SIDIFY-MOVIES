@@ -176,11 +176,39 @@ jobs:
 
           "$BT/apksigner" verify --verbose --print-certs "dist/${{ steps.ver.outputs.APK_NAME }}"
 
-      - name: APK info print karo
+      - name: APK verify + info
         run: |
           set -euo pipefail
           BT="$ANDROID_HOME/build-tools/${BUILD_TOOLS}"
-          "$BT/aapt" dump badging "dist/${{ steps.ver.outputs.APK_NAME }}" | head -20
+          APK="dist/${{ steps.ver.outputs.APK_NAME }}"
+
+          echo "### APK gyaan" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          # 1) manifest / badging (yeh fail hua to APK hi galat hai)
+          "$BT/aapt" dump badging "$APK" | head -12 | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 2) zip structure
+          unzip -l "$APK" > /tmp/list.txt || true
+          echo "--- zip entries ---" | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -E '(classes[0-9]*\.dex|resources\.arsc|AndroidManifest\.xml|assets/index\.android\.bundle)$' /tmp/list.txt | tee -a "$GITHUB_STEP_SUMMARY" | head -3
+
+          echo "--- counts ---" | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo "total entries : $(tail -1 /tmp/list.txt | awk '{print $2}')"
+            echo "dex files     : $(grep -cE 'classes[0-9]*\.dex$' /tmp/list.txt || true)"
+            echo "native .so    : $(grep -cE '\.so$' /tmp/list.txt || true)"
+            echo "res/ entries  : $(grep -cE '(^| )res/' /tmp/list.txt || true)"
+            echo "kotlin/ files : $(grep -cE 'kotlin/' /tmp/list.txt || true)"
+            echo "arsc size     : $(grep 'resources.arsc' /tmp/list.txt | awk '{print $1}' | head -1)"
+            echo "dex size      : $(grep -E 'classes[0-9]*\.dex$' /tmp/list.txt | awk '{s+=$1} END {print s+0}')"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 3) resource IDs (public.xml ke IDs preserve hue?)
+          echo "--- resource ID check ---" | tee -a "$GITHUB_STEP_SUMMARY"
+          "$BT/aapt2" dump resources "$APK" 2>/dev/null | grep -E "string/app_name|drawable/abc_ab_share_pack_mtrl_alpha|mipmap/ic_launcher" | head -6 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
           ls -lh dist/
 
       - name: Upload artifact
